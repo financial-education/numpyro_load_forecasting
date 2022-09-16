@@ -1,1 +1,32 @@
 #+title: Load Forecasting with NumPyro
+#+author: Matt Brigida, Ph.D.
+#+email: matthew.brigida@sunypoly.edu
+#+PROPERTY: header-args :eval no
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+#+HTML_HEAD: <style>pre.src{background:#343131;color:white;} </style>
+
+
+
+
+#+name: load-libraries
+#+begin_src python :session *py*
+import numpyro as py
+import pandas as pd
+#+end_src
+
+#+RESULTS: load-libraries
+
+We can pull real-time load data from the following URL.  The example URL pulls data for 7/3/2022.
+
+http://mis.nyiso.com/public/csv/pal/20220703pal.csv
+
+
+Let's create a function that will pull data for a few days before the date we want to forecast.
+
+#+name: data-function
+#+begin_src python :session *py*
+def get_data(date):    # in yyyymmdd format
+    url = "http://mis.nyiso.com/public/csv/pal/" + str(date) + "pal.csv"
+    data = pd.read_csv(url)
+    return(data)
+#+end_src
