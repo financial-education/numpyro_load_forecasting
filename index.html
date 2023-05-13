@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2022-09-16 Fri 16:00 -->
+<!-- 2023-01-16 Mon 10:17 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Load Forecasting with NumPyro</title>
@@ -20,36 +20,99 @@
 <body>
 <div id="content" class="content">
 <h1 class="title">Load Forecasting with NumPyro</h1>
-<div class="org-src-container">
-<pre class="src src-python" id="orgdda266c"><span style="color: #c099ff;">import</span> numpyro <span style="color: #c099ff;">as</span> py
-<span style="color: #c099ff;">import</span> pandas <span style="color: #c099ff;">as</span> pd
-</pre>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgb3d03cd">1. EIA Data</a>
+<ul>
+<li><a href="#org8c0d0ff">1.1. Plot Data</a></li>
+<li><a href="#orgc76f05e">1.2. Train/Test Split</a></li>
+</ul>
+</li>
+<li><a href="#orgcd819e7">2. Model</a></li>
+<li><a href="#orgb233805">3. NYISO Data</a></li>
+</ul>
+</div>
 </div>
 
+<div id="outline-container-orgb3d03cd" class="outline-2">
+<h2 id="orgb3d03cd"><span class="section-number-2">1.</span> EIA Data</h2>
+<div class="outline-text-2" id="text-1">
 <p>
-We can pull real-time load data from the following URL.  The example URL pulls data for 7/3/2022.
+Get data in R because my package works better than the python versions.
 </p>
 
 <p>
-<a href="http://mis.nyiso.com/public/csv/pal/20220703pal.csv">http://mis.nyiso.com/public/csv/pal/20220703pal.csv</a>
+Retail sales of electricity : New York : industrial : monthly in million KWh
+</p>
+
+<p>
+Read it into Python.
+</p>
+</div>
+
+<div id="outline-container-org8c0d0ff" class="outline-3">
+<h3 id="org8c0d0ff"><span class="section-number-3">1.1.</span> Plot Data</h3>
+<div class="outline-text-3" id="text-1-1">
+<iframe src="./figs/elec.html" width="100%"height="500px"/>
+</div>
+</div>
+
+<div id="outline-container-orgc76f05e" class="outline-3">
+<h3 id="orgc76f05e"><span class="section-number-3">1.2.</span> Train/Test Split</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Length is 258.  Use 200 to train and 58 to test.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcd819e7" class="outline-2">
+<h2 id="orgcd819e7"><span class="section-number-2">2.</span> Model</h2>
+</div>
+
+
+
+
+
+
+
+<div id="outline-container-orgb233805" class="outline-2">
+<h2 id="orgb233805"><span class="section-number-2">3.</span> NYISO Data</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+We can pull real-time load data from the following URL.  The example URL pulls data for May 2022.
+</p>
+
+<p>
+<a href="http://mis.nyiso.com/public/csv/pal/20220501pal_csv.zip">http://mis.nyiso.com/public/csv/pal/20220501pal_csv.zip</a>
 </p>
 
 
 <p>
-Let's create a function that will pull data for a few days before the date we want to forecast.
+Let's create a function that will pull data for a month and process it forecast.  It has to:
 </p>
+
+<ul class="org-ul">
+<li>Download the file</li>
+<li>unzip it</li>
+</ul>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org37809dc"><span style="color: #c099ff;">def</span> <span style="color: #82aaff;">get_data</span>(date):    <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">in yyyymmdd format</span>
-    <span style="color: #ff98a4;">url</span> = <span style="color: #c3e88d;">"http://mis.nyiso.com/public/csv/pal/"</span> + <span style="color: #c099ff;">str</span>(date) + <span style="color: #c3e88d;">"pal.csv"</span>
+<pre class="src src-python" id="org945acf3"><span style="color: #c099ff;">def</span> <span style="color: #82aaff;">get_data</span>(month):    <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">in yyyymm format</span>
+    <span style="color: #ff98a4;">url</span> = <span style="color: #c3e88d;">"http://mis.nyiso.com/public/csv/pal/"</span> + <span style="color: #c099ff;">str</span>(month) + <span style="color: #c3e88d;">"01pal_csv.zip"</span>
     <span style="color: #ff98a4;">data</span> = pd.read_csv(url)
     <span style="color: #c099ff;">return</span>(data)
 </pre>
 </div>
 </div>
+</div>
+</div>
 <div id="postamble" class="status">
 <p class="author">Author: Matt Brigida, Ph.D.</p>
-<p class="date">Created: 2022-09-16 Fri 16:00</p>
+<p class="date">Created: 2023-01-16 Mon 10:17</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

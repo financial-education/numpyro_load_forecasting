@@ -1,0 +1,99 @@
+#+title: Load Forecasting with NumPyro
+#+author: Matt Brigida, Ph.D.
+#+PROPERTY: header-args :eval yes
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
+#+HTML_HEAD: <style>pre.src{background:#343131;color:white;} </style>
+
+#+begin_comment
+lets try: https://num.pyro.ai/en/stable/tutorials/time_series_forecasting.html#
+#+end_comment
+
+#+name: load-libraries
+#+begin_src python :session *py* :results none :exports none
+import jax.numpy as jnp
+from jax import random
+
+import numpyro
+import numpyro.distributions as dist
+from numpyro.contrib.control_flow import scan
+from numpyro.diagnostics import autocorrelation, hpdi
+from numpyro.infer import MCMC, NUTS, Predictive
+
+import pandas as pd
+#+end_src
+
+
+
+
+
+
+* NYISO Data
+
+We can pull real-time load data from the following URL.  The example URL pulls data for May 2022.
+
+http://mis.nyiso.com/public/csv/pal/20220501pal_csv.zip
+
+
+Let's create a function that will pull data for a month and process it forecast.  It has to:
+
++ Download the file
++ unzip it 
+
+#+name: data-function
+#+begin_src python :session *py* :eval yes
+import urllib.request
+import zipfile
+import pandas as pd
+
+def get_data(month):    # in yyyymm format
+    url = "http://mis.nyiso.com/public/csv/pal/" + str(month) + "01pal_csv.zip"
+# download the zip file
+    filename, headers = urllib.request.urlretrieve(url)
+
+# extract the csv files from the zip
+    with zipfile.ZipFile(filename, "r") as zip_ref:
+        csv_filenames = [f.filename for f in zip_ref.filelist if f.filename.endswith(".csv")]
+        dfs = []
+        for csv_filename in csv_filenames:
+            # read csv into pandas dataframe
+            with zip_ref.open(csv_filename) as csv_file:
+                df = pd.read_csv(csv_file)
+                dfs.append(df)
+    
+    # concatenate the dataframes into a single dataframe
+    df_concatenated = pd.concat(dfs)
+    df_concatenated.set_index('Time Stamp', drop=True, inplace=True)
+
+    return(df_concatenated)
+#+end_src
+
+#+RESULTS: data-function
+
+#+begin_src python :session *py* :eval yes
+feb23 = get_data("202303")
+#+end_src
+
+#+RESULTS:
+
+#+begin_src python :session *py* :eval yes :cache yes
+feb23
+#+end_src
+
+#+RESULTS:
+#+begin_example
+                    Time Zone    Name   PTID       Load
+Time Stamp                                             
+03/01/2023 00:00:00       EST  CAPITL  61757  1226.9684
+03/01/2023 00:00:00       EST  CENTRL  61754  1722.6571
+03/01/2023 00:00:00       EST  DUNWOD  61760   596.3434
+03/01/2023 00:00:00       EST  GENESE  61753  1008.5693
+03/01/2023 00:00:00       EST  HUD VL  61758  1013.8084
+...                       ...     ...    ...        ...
+03/31/2023 23:55:00       EDT  MHK VL  61756   713.8065
+03/31/2023 23:55:00       EDT  MILLWD  61759   279.8333
+03/31/2023 23:55:00       EDT  N.Y.C.  61761  4579.5044
+03/31/2023 23:55:00       EDT   NORTH  61755   658.6137
+03/31/2023 23:55:00       EDT    WEST  61752  1477.0037
+
+[100881 rows x 4 columns]
+#+end_example

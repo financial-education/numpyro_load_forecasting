@@ -1,32 +1,101 @@
 #+title: Load Forecasting with NumPyro
 #+author: Matt Brigida, Ph.D.
-#+email: matthew.brigida@sunypoly.edu
-#+PROPERTY: header-args :eval no
+#+PROPERTY: header-args :eval yes
 #+SETUPFILE: https://fniessen.github.io/org-html-themes/org/theme-readtheorg.setup
 #+HTML_HEAD: <style>pre.src{background:#343131;color:white;} </style>
 
-
-
+#+begin_comment
+lets try: https://num.pyro.ai/en/stable/tutorials/time_series_forecasting.html#
+#+end_comment
 
 #+name: load-libraries
-#+begin_src python :session *py*
-import numpyro as py
+#+begin_src python :session *py* :results none :exports none
+import jax.numpy as jnp
+from jax import random
+
+import numpyro
+import numpyro.distributions as dist
+from numpyro.contrib.control_flow import scan
+from numpyro.diagnostics import autocorrelation, hpdi
+from numpyro.infer import MCMC, NUTS, Predictive
+
 import pandas as pd
 #+end_src
 
-#+RESULTS: load-libraries
+* EIA Data
 
-We can pull real-time load data from the following URL.  The example URL pulls data for 7/3/2022.
+Get data in R because my package works better than the python versions.
 
-http://mis.nyiso.com/public/csv/pal/20220703pal.csv
+#+begin_src R :session *R* :results none :exports none :eval no
+library(EIAdata)
+key <- source("~/eia_key")$value
+#+end_src
+
+Retail sales of electricity : New York : industrial : monthly in million KWh
+
+#+begin_src R :session *R* :results none :exports none :eval no
+elec <- getEIA("ELEC.SALES.NY-IND.M", key = key)
+#+end_src
+
+#+begin_src R :session *R* :results none :exports none  :eval no
+write.zoo(elec, "electricity_sales.csv")
+#+end_src
+
+Read it into Python.
+
+#+begin_src python :session *py* :results none :exports none
+elec_data = pd.read_csv("./electricity_sales.csv", sep=" ")
+elec_data.index = elec_data["Index"]
+elec_data.drop(["Index"], axis=1)
+#+end_src
+
+** Plot Data
+
+#+begin_src python :session *py* :results none :exports none
+import plotly.express as px
+
+fig = px.line(elec_data, x=elec_data.index, y="ELEC.SALES.NY.IND.M", title='NY retail sales of electricity, industrial (million KWh)', template="plotly_dark")
+fig.write_html("./figs/elec.html")
+#+end_src
 
 
-Let's create a function that will pull data for a few days before the date we want to forecast.
+#+begin_export html
+<iframe src="./figs/elec.html" width="100%"height="500px"/>
+#+end_export
+
+** Train/Test Split
+
+Length is 258.  Use 200 to train and 58 to test.
+
+#+begin_src python :session *py* :results none :exports none
+y_train, y_test = jnp.array(data[:200], dtype=jnp.float32), data[80:]
+#+end_src
+
+
+* Model
+
+
+
+
+
+
+
+* NYISO Data
+
+We can pull real-time load data from the following URL.  The example URL pulls data for May 2022.
+
+http://mis.nyiso.com/public/csv/pal/20220501pal_csv.zip
+
+
+Let's create a function that will pull data for a month and process it forecast.  It has to:
+
++ Download the file
++ unzip it 
 
 #+name: data-function
-#+begin_src python :session *py*
-def get_data(date):    # in yyyymmdd format
-    url = "http://mis.nyiso.com/public/csv/pal/" + str(date) + "pal.csv"
+#+begin_src python :session *py* :eval no
+def get_data(month):    # in yyyymm format
+    url = "http://mis.nyiso.com/public/csv/pal/" + str(month) + "01pal_csv.zip"
     data = pd.read_csv(url)
     return(data)
 #+end_src
