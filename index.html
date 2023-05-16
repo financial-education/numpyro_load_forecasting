@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2023-01-16 Mon 10:17 -->
+<!-- 2023-05-16 Tue 13:22 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Load Forecasting with NumPyro</title>
+<title>Load Forecasting with NumPyro Load (in MW) Time Series</title>
 <meta name="author" content="Matt Brigida, Ph.D." />
 <meta name="generator" content="Org Mode" />
 <link rel="stylesheet" type="text/css" href="https://fniessen.github.io/org-html-themes/src/readtheorg_theme/css/htmlize.css"/>
@@ -19,69 +19,19 @@
 </head>
 <body>
 <div id="content" class="content">
-<h1 class="title">Load Forecasting with NumPyro</h1>
+<h1 class="title">Load Forecasting with NumPyro Load (in MW) Time Series</h1>
 <div id="table-of-contents" role="doc-toc">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents" role="doc-toc">
 <ul>
-<li><a href="#orgb3d03cd">1. EIA Data</a>
-<ul>
-<li><a href="#org8c0d0ff">1.1. Plot Data</a></li>
-<li><a href="#orgc76f05e">1.2. Train/Test Split</a></li>
-</ul>
-</li>
-<li><a href="#orgcd819e7">2. Model</a></li>
-<li><a href="#orgb233805">3. NYISO Data</a></li>
+<li><a href="#org5260b91">1. NYISO Data</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-orgb3d03cd" class="outline-2">
-<h2 id="orgb3d03cd"><span class="section-number-2">1.</span> EIA Data</h2>
+<div id="outline-container-org5260b91" class="outline-2">
+<h2 id="org5260b91"><span class="section-number-2">1.</span> NYISO Data</h2>
 <div class="outline-text-2" id="text-1">
-<p>
-Get data in R because my package works better than the python versions.
-</p>
-
-<p>
-Retail sales of electricity : New York : industrial : monthly in million KWh
-</p>
-
-<p>
-Read it into Python.
-</p>
-</div>
-
-<div id="outline-container-org8c0d0ff" class="outline-3">
-<h3 id="org8c0d0ff"><span class="section-number-3">1.1.</span> Plot Data</h3>
-<div class="outline-text-3" id="text-1-1">
-<iframe src="./figs/elec.html" width="100%"height="500px"/>
-</div>
-</div>
-
-<div id="outline-container-orgc76f05e" class="outline-3">
-<h3 id="orgc76f05e"><span class="section-number-3">1.2.</span> Train/Test Split</h3>
-<div class="outline-text-3" id="text-1-2">
-<p>
-Length is 258.  Use 200 to train and 58 to test.
-</p>
-</div>
-</div>
-</div>
-
-<div id="outline-container-orgcd819e7" class="outline-2">
-<h2 id="orgcd819e7"><span class="section-number-2">2.</span> Model</h2>
-</div>
-
-
-
-
-
-
-
-<div id="outline-container-orgb233805" class="outline-2">
-<h2 id="orgb233805"><span class="section-number-2">3.</span> NYISO Data</h2>
-<div class="outline-text-2" id="text-3">
 <p>
 We can pull real-time load data from the following URL.  The example URL pulls data for May 2022.
 </p>
@@ -101,18 +51,114 @@ Let's create a function that will pull data for a month and process it forecast.
 </ul>
 
 <div class="org-src-container">
-<pre class="src src-python" id="org945acf3"><span style="color: #c099ff;">def</span> <span style="color: #82aaff;">get_data</span>(month):    <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">in yyyymm format</span>
+<pre class="src src-python" id="org34d0d10"><span style="color: #c099ff;">import</span> urllib.request
+<span style="color: #c099ff;">import</span> zipfile
+<span style="color: #c099ff;">import</span> pandas <span style="color: #c099ff;">as</span> pd
+
+<span style="color: #c099ff;">def</span> <span style="color: #82aaff;">get_data</span>(month):    <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">in yyyymm format</span>
     <span style="color: #ff98a4;">url</span> = <span style="color: #c3e88d;">"http://mis.nyiso.com/public/csv/pal/"</span> + <span style="color: #c099ff;">str</span>(month) + <span style="color: #c3e88d;">"01pal_csv.zip"</span>
-    <span style="color: #ff98a4;">data</span> = pd.read_csv(url)
-    <span style="color: #c099ff;">return</span>(data)
+<span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">download the zip file</span>
+    <span style="color: #ff98a4;">filename</span>, <span style="color: #ff98a4;">headers</span> = urllib.request.urlretrieve(url)
+
+<span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">extract the csv files from the zip</span>
+    <span style="color: #c099ff;">with</span> zipfile.ZipFile(filename, <span style="color: #c3e88d;">"r"</span>) <span style="color: #c099ff;">as</span> <span style="color: #ff98a4;">zip_ref</span>:
+        csv_filenames = [f.filename <span style="color: #c099ff;">for</span> f <span style="color: #c099ff;">in</span> zip_ref.filelist <span style="color: #c099ff;">if</span> f.filename.endswith(<span style="color: #c3e88d;">".csv"</span>)]
+        <span style="color: #ff98a4;">dfs</span> = []
+        <span style="color: #c099ff;">for</span> csv_filename <span style="color: #c099ff;">in</span> <span style="color: #ff98a4;">csv_filenames</span>:
+            <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">read csv into pandas dataframe</span>
+            <span style="color: #c099ff;">with</span> zip_ref.<span style="color: #c099ff;">open</span>(csv_filename) <span style="color: #c099ff;">as</span> csv_file:
+                df = pd.read_csv(csv_file)
+                dfs.append(df)
+
+    <span style="color: #7a88cf;"># </span><span style="color: #7a88cf;">concatenate the dataframes into a single dataframe</span>
+    <span style="color: #ff98a4;">df_concatenated</span> = pd.concat(dfs)
+    df_concatenated.set_index(<span style="color: #c3e88d;">'Time Stamp'</span>, drop=<span style="color: #ff995e;">True</span>, inplace=<span style="color: #ff995e;">True</span>)
+
+    <span style="color: #c099ff;">return</span>(df_concatenated)
 </pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #ff98a4;">mar23</span> = get_data(<span style="color: #c3e88d;">"202303"</span>)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">mar23
+</pre>
+</div>
+
+<pre class="example" id="org35dc882">
+                    Time Zone    Name   PTID       Load
+Time Stamp                                             
+03/01/2023 00:00:00       EST  CAPITL  61757  1226.9684
+03/01/2023 00:00:00       EST  CENTRL  61754  1722.6571
+03/01/2023 00:00:00       EST  DUNWOD  61760   596.3434
+03/01/2023 00:00:00       EST  GENESE  61753  1008.5693
+03/01/2023 00:00:00       EST  HUD VL  61758  1013.8084
+...                       ...     ...    ...        ...
+03/31/2023 23:55:00       EDT  MHK VL  61756   713.8065
+03/31/2023 23:55:00       EDT  MILLWD  61759   279.8333
+03/31/2023 23:55:00       EDT  N.Y.C.  61761  4579.5044
+03/31/2023 23:55:00       EDT   NORTH  61755   658.6137
+03/31/2023 23:55:00       EDT    WEST  61752  1477.0037
+
+[100881 rows x 4 columns]
+</pre>
+
+
+<p>
+Below are functions to filter by Name and visualize:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #c099ff;">def</span> <span style="color: #82aaff;">one_location_time_series</span>(df, name):
+    <span style="color: #c099ff;">return</span>(df[df[<span style="color: #c3e88d;">'Name'</span>] == name][<span style="color: #c3e88d;">'Load'</span>])
+
+one_location_time_series(mar23, <span style="color: #c3e88d;">'NORTH'</span>)
+</pre>
+</div>
+
+<pre class="example" id="org0ad30a0">
+Time Stamp
+03/01/2023 00:00:00    705.3594
+03/01/2023 00:05:00    706.4240
+03/01/2023 00:10:00    699.5104
+03/01/2023 00:15:00    686.3651
+03/01/2023 00:20:00    702.8407
+                         ...   
+03/31/2023 23:42:23    659.7048
+03/31/2023 23:43:47    662.0710
+03/31/2023 23:45:00    660.0018
+03/31/2023 23:50:00    653.6038
+03/31/2023 23:55:00    658.6137
+Name: Load, Length: 9171, dtype: float64
+</pre>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #c099ff;">def</span> <span style="color: #82aaff;">elec_plot</span>(df, name):
+    one_location_time_series(df, name)[<span style="color: #c3e88d;">"Load"</span>].plot.line()
+    plt.savefig(<span style="color: #c3e88d;">'line_plot.png'</span>)
+    plt.close()
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python">elec_plot(mar23, <span style="color: #c3e88d;">'NORTH'</span>)
+</pre>
+</div>
+
+
+<div id="org586f055" class="figure">
+<p><img src="line_plot.png" alt="line_plot.png" />
+</p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Matt Brigida, Ph.D.</p>
-<p class="date">Created: 2023-01-16 Mon 10:17</p>
+<p class="date">Created: 2023-05-16 Tue 13:22</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

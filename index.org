@@ -20,6 +20,7 @@ from numpyro.diagnostics import autocorrelation, hpdi
 from numpyro.infer import MCMC, NUTS, Predictive
 
 import pandas as pd
+import matplotlib.pyplot as plt
 #+end_src
 
 
@@ -70,13 +71,13 @@ def get_data(month):    # in yyyymm format
 #+RESULTS: data-function
 
 #+begin_src python :session *py* :eval yes :cache yes
-feb23 = get_data("202303")
+mar23 = get_data("202303")
 #+end_src
 
 #+RESULTS[7eb8712217d5de679caf8280ff5de2bd82829abd]:
 
-#+begin_src python :session *py* :eval yes
-feb23
+#+begin_src python :session *py* :eval yes :exports both
+mar23
 #+end_src
 
 #+RESULTS:
@@ -101,29 +102,44 @@ Time Stamp
 
 Below are functions to filter by Name and visualize:
 
-#+begin_src python :session *py* :eval yes :cache yes
+#+begin_src python :session *py* :eval yes :cache yes :exports both
 def one_location_time_series(df, name):
-    return(df[df['Name'] == name])
+    return(df[df['Name'] == name]['Load'])
 
-north = one_location_time_series(feb23, 'NORTH')
-north
+one_location_time_series(mar23, 'NORTH')
 #+end_src
 
-#+RESULTS[7fde1f1ab8930e51998b63af36a6a68a09ccd18d]:
+#+RESULTS[a8bba718c26b8559f4f84182c5c2826930e7bf02]:
 #+begin_example
-                    Time Zone   Name   PTID      Load
-Time Stamp                                           
-03/01/2023 00:00:00       EST  NORTH  61755  705.3594
-03/01/2023 00:05:00       EST  NORTH  61755  706.4240
-03/01/2023 00:10:00       EST  NORTH  61755  699.5104
-03/01/2023 00:15:00       EST  NORTH  61755  686.3651
-03/01/2023 00:20:00       EST  NORTH  61755  702.8407
-...                       ...    ...    ...       ...
-03/31/2023 23:42:23       EDT  NORTH  61755  659.7048
-03/31/2023 23:43:47       EDT  NORTH  61755  662.0710
-03/31/2023 23:45:00       EDT  NORTH  61755  660.0018
-03/31/2023 23:50:00       EDT  NORTH  61755  653.6038
-03/31/2023 23:55:00       EDT  NORTH  61755  658.6137
-
-[9171 rows x 4 columns]
+Time Stamp
+03/01/2023 00:00:00    705.3594
+03/01/2023 00:05:00    706.4240
+03/01/2023 00:10:00    699.5104
+03/01/2023 00:15:00    686.3651
+03/01/2023 00:20:00    702.8407
+                         ...   
+03/31/2023 23:42:23    659.7048
+03/31/2023 23:43:47    662.0710
+03/31/2023 23:45:00    660.0018
+03/31/2023 23:50:00    653.6038
+03/31/2023 23:55:00    658.6137
+Name: Load, Length: 9171, dtype: float64
 #+end_example
+
+#+begin_src python :session *py* :eval yes :cache yes
+def elec_plot(df, name):
+    one_location_time_series(df, name)["Load"].plot.line()
+    plt.savefig('line_plot.png')
+    plt.close()
+#+end_src
+
+#+RESULTS[31f1172bd66f3afdb692cb28f1b86d405a99aad4]:
+
+#+begin_src python :session *py* :results output graphics :file plot.png
+elec_plot(mar23, 'NORTH')
+#+end_src
+
+#+RESULTS[af4c652c7320e44eb0136e9704a8b4d413c91851]:
+
+#+title:  Load (in MW) Time Series
+[[file:line_plot.png]]
